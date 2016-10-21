@@ -2,6 +2,11 @@
 #define __FIFO_H
 #include <list>
 #include <pthread.h>
+
+#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
+        TypeName(const TypeName&);\
+        TypeName& operator=(const TypeName&)
+
 class ScopeLock
 {
         public:
@@ -15,6 +20,7 @@ class ScopeLock
                 }
         private:
                 pthread_mutex_t *mutex_;
+                DISALLOW_COPY_AND_ASSIGN(ScopeLock);
 };
 template <class T>
 class Fifo
