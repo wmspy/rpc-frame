@@ -27,30 +27,30 @@ class Fifo
                         ScopeLock mutex_lock(&mutex_);
                         return list_.size();
                 }
-                bool enqueue(const T& job);
-                bool dequeue(T *job);
+                void enqueue(const T& job);
+                void dequeue(T *job);
         private:
                 int max_size_;
-                list<T> list_;
+                std::list<T> list_;
                 pthread_mutex_t mutex_;
                 pthread_cond_t non_empty_cond_;
                 pthread_cond_t has_space_cond_;
 };
 
 template<class T>
-Fifo::Fifo(int max_size) : max_size_(max_size) {
-        pthread_mutex_init(&mutex_);
+Fifo<T>::Fifo(int max_size) : max_size_(max_size) {
+        pthread_mutex_init(&mutex_, 0);
         pthread_cond_init(&non_empty_cond_, 0);
         pthread_cond_init(&has_space_cond_, 0);
 }
 template<class T>
-Fifo::~Fifo() {
+Fifo<T>::~Fifo() {
         pthread_mutex_destroy(&mutex_);
         pthread_cond_destroy(&non_empty_cond_);
-        pthread_co nd_destroy(&has_space_cond_);
+        pthread_cond_destroy(&has_space_cond_);
 }
 template<class T>
-void Fifo::enqueue(const T& job) {
+void Fifo<T>::enqueue(const T& job) {
         ScopeLock mutexlock(&mutex_);
         while (true) {
                 if (!max_size_ || list_.size() < max_size_) {
@@ -58,13 +58,13 @@ void Fifo::enqueue(const T& job) {
                         break;
                 }
                 else {
-                        pthread_cond_wait(&has_space_cond_);
+                        pthread_cond_wait(&has_space_cond_, &mutex_);
                 }
         }
         pthread_cond_signal(&non_empty_cond_);
 }
 template<class T>
-void Fifo::dequeue(T *job) {
+void Fifo<T>::dequeue(T *job) {
         ScopeLock mutexlock(&mutex_);
         while (true) {
                 if (list_.size() > 0) {
@@ -76,7 +76,7 @@ void Fifo::dequeue(T *job) {
                         break;
                 }
                 else {
-                        pthread_cond_wait(&non_empty_cond_);
+                        pthread_cond_wait(&non_empty_cond_, &mutex_);
                 }
         }
 }
